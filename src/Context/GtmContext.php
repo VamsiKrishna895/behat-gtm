@@ -64,6 +64,9 @@ class GtmContext extends RawMinkContext {
    */
   public function getDataLayerSettingShouldMatch($key, $regex) {
     $property_value = $this->getDataLayerValue($key);
+    if (is_bool($property_value)) {
+        $property_value = ($property_value==true) ?'true':'false';
+    }
     if (!preg_match($regex, $property_value)) {
       throw new \Exception($property_value . ' does not match ' . $regex);
     }
