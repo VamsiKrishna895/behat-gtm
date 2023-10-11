@@ -51,10 +51,26 @@ class GtmContext extends RawMinkContext {
    * @Given google tag manager data layer setting :arg1 should be :arg2
    */
   public function dataLayerSettingShouldBe($key, $value) {
-    $property_value = $this->getDataLayerValue($key);
-    if ($value != $property_value) {
-      throw new \Exception($value . ' is not the same as ' . $property_value);
-    }
+      $json_arr = $this->getDataLayerJson();
+      // Loop through the array and return the data layer value
+      foreach ($json_arr as $json_item) {
+          // Check if the key contains dot.
+          if (strpos($key, '.', 0) !== false) {
+              // Get value using dot notation.
+              $res = $this->getDotValue($json_item, $key);
+              if (!is_null($res)) {
+                  $value1 = $res;
+              }
+          } elseif (isset($json_item[$key])) {
+              if ($json_item[$key] !== $value) {
+                  continue;
+              }
+              $value1 = $json_item[$key];
+          }
+      }
+      if ($value1 !== $value) {
+          throw new \Exception($value1 . ' is not the same as ' . $value);
+      }
   }
 
   /**
@@ -188,4 +204,34 @@ class GtmContext extends RawMinkContext {
 
     return $json_arr;
   }
+
+    /**
+     * Waits until the Datalayer object is updated and then checks if property is available.
+     *
+     * @Given I wait for the data layer setting :arg1 with value :arg2
+     */
+    public function waitDataLayerSettingWithValue($key, $value, $loops = 10) {
+        $loop = 0;
+        do {
+            try {
+                $loop++;
+                if($this->getDataLayerValue($key) == $value) {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                // Ommit the exception until we finish the loop.
+            }
+            sleep(1);
+        } while ($loop < $loops);
+
+        throw new \Exception("$key not found after waiting for $loops seconds.");
+    }
+
+    /**
+     * @Given I print the data layer
+     */
+    public function iPrintDataLayer() {
+        $json_arr = $this->getDataLayerJson();
+        var_dump($json_arr);
+    }
 }
