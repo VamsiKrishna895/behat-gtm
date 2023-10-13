@@ -169,7 +169,6 @@ class GtmContext extends RawMinkContext {
         }
         $script .= ' return i; });';
       }
-      var_dump($script);
       $json_arr = $this->getSession()->getDriver()->evaluateScript($script);
     }
     else {
