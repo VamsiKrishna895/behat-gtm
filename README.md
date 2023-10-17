@@ -26,6 +26,7 @@ default:
 Given google tag manager id is :id
 Given google tag manager data layer setting :key should be :value
 Given google tag manager data layer setting :key should match :value
+Given I wait for the data layer setting :key with value :value
 ```
 
 > Note: use `@javascript` to check using JS
