@@ -34,15 +34,19 @@ class GtmContext extends RawMinkContext {
   /**
    * Waits until the Datalayer object is updated and then checks if property is available.
    *
-   * @Given I wait for the data layer setting :arg1
+   * @Given I wait for the data layer setting :arg1 with value :arg2
    */
-  public function waitDataLayerSetting($key, $loops = 10) {
+  public function waitDataLayerSetting($key, $value, $loops = 10) {
     $loop = 0;
     do {
       try {
         $loop++;
-        $this->getDataLayerValue($key);
-        return true;
+        $values = $this->getDataLayerValues($key);
+        foreach ($values as $property_value) {
+          if ($value == $property_value) {
+            return true;
+          }
+        }
       } catch (\Exception $e) {
         // Ommit the exception until we finish the loop.
       }
@@ -58,10 +62,14 @@ class GtmContext extends RawMinkContext {
    * @Given google tag manager data layer setting :arg1 should be :arg2
    */
   public function dataLayerSettingShouldBe($key, $value) {
-    $property_value = $this->getDataLayerValue($key);
-    if ($value != $property_value) {
-      throw new \Exception($value . ' is not the same as ' . $property_value);
+    $values = $this->getDataLayerValues($key);
+    foreach ($values as $property_value) {
+      if ($value == $property_value) {
+        return true;
+      }
     }
+
+    throw new \Exception($value . ' is not the same as ' . $property_value);
   }
 
   /**
@@ -70,24 +78,30 @@ class GtmContext extends RawMinkContext {
    * @Given google tag manager data layer setting :arg1 should match :arg2
    */
   public function getDataLayerSettingShouldMatch($key, $regex) {
-    $property_value = $this->getDataLayerValue($key);
-    if (is_bool($property_value)) {
-      $property_value = ($property_value==true) ? 'true' : 'false';
+    $values = $this->getDataLayerValues($key);
+    foreach ($values as $property_value) {
+      // Convert boolean values to string.
+      if (is_bool($property_value)) {
+        $property_value = ($property_value == true) ? 'true' : 'false';
+      }
+      if (preg_match($regex, $property_value)) {
+        return true;
+      }
     }
-    if (!preg_match($regex, $property_value)) {
-      throw new \Exception($property_value . ' does not match ' . $regex);
-    }
+
+    throw new \Exception($property_value . ' does not match ' . $regex);
   }
 
   /**
    * Get Google Tag Manager Data Layer value
    *
    * @param $key
-   * @return mixed
+   * @return array
    * @throws \Exception
    */
-  protected function getDataLayerValue($key) {
+  protected function getDataLayerValues($key) {
     $json_arr = $this->getDataLayerJson();
+    $values = [];
 
     // Loop through the array and return the data layer value
     foreach ($json_arr as $json_item) {
@@ -96,12 +110,17 @@ class GtmContext extends RawMinkContext {
         // Get value using dot notation.
         $value = $this->getDotValue($json_item, $key);
         if (!is_null($value)) {
-          return $value;
+          $values[] = $value;
         }
       } elseif (isset($json_item[$key])) {
-          return $json_item[$key];
+          $values[] = $json_item[$key];
       }
     }
+
+    if (!empty($values)) {
+      return $values;
+    }
+
     throw new \Exception($key . ' not found.');
   }
 
